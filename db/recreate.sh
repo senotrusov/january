@@ -38,6 +38,7 @@ $db -c "ALTER PROCEDURAL LANGUAGE plpgsql OWNER TO $user;"
 $db < /usr/share/postgresql/8.4/contrib/hstore.sql
 
 $db < db/schema.sql
+$db < db/fixtures.sql
 
 pg_dump $dbname --username postgres --schema-only > db/schema-dump.sql
 
