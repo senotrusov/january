@@ -14,72 +14,105 @@
 --  limitations under the License.
 
 
-CREATE TABLE sites (
-  id     bigserial PRIMARY KEY,
-  domain text
-  );
+CREATE TABLE users (
+  id                     bigserial PRIMARY KEY,
+  created_at             timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at             timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  
+  email                  character varying(255),
+  encrypted_password     character varying(255),
+  
+  reset_password_token   character varying(255),
+  reset_password_sent_at timestamp with time zone,
+  
+  last_sign_in_at        timestamp with time zone,
+  last_sign_in_ip        inet -- character varying(39)
+);
+
+CREATE UNIQUE INDEX users_email_idx ON users USING btree (email);
+
+
+
+CREATE TABLE boards (
+  id          bigserial PRIMARY KEY,
+  created_at  timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at  timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  slug        character varying(64) NOT NULL
+);
+
+CREATE UNIQUE INDEX boards_slug_idx ON boards USING btree (slug);
 
 
 
 CREATE TABLE documents (
-  id             bigserial PRIMARY KEY,
-  attrs          hstore,
-  overrides      hstore,
+  id          bigserial PRIMARY KEY,
+  created_at  timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at  timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   
-  prototype_id   bigint, -- no FK and index to minimize unnecessary indexes 
-  line_id        bigint references documents(id),
+  board_id    bigint NOT NULL references boards(id),
+  author_id   bigint NOT NULL references users(id),
   
-  sections_order bigint[],
+  user_identity_counter integer NOT NULL default 0, -- update w/lock set + 1 
 
-  site_id        bigint NOT NULL references sites(id)
+  image        character varying(128),
+  title        character varying(256),
+  url          character varying(2048),
+  message      character varying(1024)
 );
 
-CREATE INDEX documents_line_id_idx ON documents USING btree (line_id); 
-CREATE INDEX documents_site_id_idx ON documents USING btree (site_id); 
+CREATE INDEX documents_board_id_idx  ON documents USING btree (board_id); 
+CREATE INDEX documents_author_id_idx ON documents USING btree (author_id); 
 
-CREATE INDEX documents_attrs_idx   ON documents USING gin (attrs); 
+
+
+CREATE TABLE user_identities (
+  id           bigserial PRIMARY KEY,
+  user_id      bigint  NOT NULL references users(id),
+  document_id  bigint  NOT NULL references documents(id),
+  identity     integer NOT NULL 
+);
+
+CREATE INDEX user_identities_user_id_idx       ON user_identities USING btree (user_id);
+CREATE UNIQUE INDEX user_identities_unique_idx ON user_identities USING btree (document_id, identity);
 
 
 
 CREATE TABLE sections (
-  id               bigserial PRIMARY KEY,
-  attrs            hstore,
-  overrides        hstore,
+  id           bigserial PRIMARY KEY,
+  created_at   timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at   timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  document_id  bigint NOT NULL references documents(id),
   
-  prototype_id     bigint, -- no FK and index to minimize unnecessary indexes
-  line_id          bigint references sections(id),
-
-  paragraphs_order bigint[],
-
-  document_id      bigint NOT NULL references documents(id),
-  site_id          bigint NOT NULL references sites(id)
+  image        character varying(128),
+  title        character varying(256) NOT NULL,
+  
+  is_public                       boolean NOT NULL DEFAULT true,
+  is_writable_if_user_represented boolean NOT NULL DEFAULT false
 );
 
-CREATE INDEX sections_line_id_idx     ON sections USING btree (line_id); 
 CREATE INDEX sections_document_id_idx ON sections USING btree (document_id); 
-CREATE INDEX sections_site_id_idx     ON sections USING btree (site_id); 
 
-CREATE INDEX sections_attrs_idx       ON sections USING gin (attrs); 
+
 
 
 CREATE TABLE paragraphs (
   id           bigserial PRIMARY KEY,
-  attrs        hstore,
-  overrides    hstore,
-  
-  prototype_id bigint, -- no FK and index to minimize unnecessary indexes
-  line_id      bigint references paragraphs(id),
-  
-  parent_id    bigint, -- no FK and index to minimize unnecessary indexes
-  childs_order bigint[],
-  
+  created_at   timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at   timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
   section_id   bigint NOT NULL references sections(id),
-  site_id      bigint NOT NULL references sites(id)
+  author_id    bigint NOT NULL references user_identities(id),
+  line_id      bigint NOT NULL references paragraphs(id),
+  
+  image        character varying(128),
+  title        character varying(256),
+  url          character varying(2048),
+  message      character varying(1024)
 );
 
-CREATE INDEX paragraphs_line_id_idx    ON paragraphs USING btree (line_id); 
-CREATE INDEX paragraphs_section_id_idx ON paragraphs USING btree (section_id); 
-CREATE INDEX paragraphs_site_id_idx    ON paragraphs USING btree (site_id);
-
-CREATE INDEX paragraphs_attrs_idx      ON paragraphs USING gin (attrs); 
+CREATE INDEX paragraphs_section_id_idx ON paragraphs USING btree (section_id);
+CREATE INDEX paragraphs_author_id_idx  ON paragraphs USING btree (author_id);
+CREATE INDEX paragraphs_line_id_idx    ON paragraphs USING btree (line_id);
 
