@@ -53,7 +53,7 @@ CREATE TABLE documents (
   board_id    bigint NOT NULL references boards(id),
   author_id   bigint NOT NULL references users(id),
   
-  user_identity_counter integer NOT NULL default 0, -- update w/lock set + 1 
+  user_identity_counter integer NOT NULL default 0, -- gapless sequence: update w/lock set + 1 
 
   image        character varying(128),
   title        character varying(256),
