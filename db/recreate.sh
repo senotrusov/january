@@ -18,18 +18,18 @@
 user=january
 dbname=january
 
-db="psql $dbname --username $user --single-transaction --echo-all"
-postgres="psql postgres --username postgres --command"
+db="psql $dbname --username $user --single-transaction --echo-all --set ON_ERROR_STOP=on"
+postgres="psql postgres --username postgres --set ON_ERROR_STOP=on"
 
 
-if [ "`$postgres "SELECT 1 WHERE EXISTS(SELECT * FROM pg_catalog.pg_user WHERE usename = '$user')" --tuples-only --no-align`" != 1 ] ; then
+if [ "`$postgres -c "SELECT 1 WHERE EXISTS(SELECT * FROM pg_catalog.pg_user WHERE usename = '$user')" --tuples-only --no-align`" != 1 ] ; then
   echo "Please specify password for user $user"
   read password
-  $postgres "CREATE USER $user WITH PASSWORD '$password'"
+  $postgres -c "CREATE USER $user WITH PASSWORD '$password'"
 fi
 
-$postgres "DROP DATABASE $dbname"
-$postgres "CREATE DATABASE $dbname OWNER $user ENCODING 'UTF8'"
+$postgres -c "DROP DATABASE $dbname"
+$postgres -c "CREATE DATABASE $dbname OWNER $user ENCODING 'UTF8'"
 
 
 $db -c "CREATE PROCEDURAL LANGUAGE plpgsql;"

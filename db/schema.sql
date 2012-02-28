@@ -19,14 +19,16 @@ CREATE TABLE users (
   created_at             timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at             timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   
+  creator_addr           inet NOT NULL DEFAULT '127.0.0.1',
+  
   email                  character varying(255),
-  encrypted_password     character varying(255),
+  password               character varying(255),
   
   reset_password_token   character varying(255),
   reset_password_sent_at timestamp with time zone,
   
   last_sign_in_at        timestamp with time zone,
-  last_sign_in_ip        inet -- character varying(39)
+  last_sign_in_addr      inet
 );
 
 CREATE UNIQUE INDEX users_email_idx ON users USING btree (email);
@@ -52,6 +54,7 @@ CREATE TABLE documents (
   
   board_id    bigint NOT NULL references boards(id),
   author_id   bigint NOT NULL references users(id),
+  author_addr inet   NOT NULL DEFAULT '127.0.0.1',
   
   user_identity_counter integer NOT NULL default 0, -- gapless sequence: update w/lock set + 1 
 
@@ -84,6 +87,8 @@ CREATE TABLE sections (
   updated_at   timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
   document_id  bigint NOT NULL references documents(id),
+  author_id    bigint NOT NULL references users(id),
+  author_addr  inet   NOT NULL DEFAULT '127.0.0.1',
   
   image        character varying(128),
   title        character varying(256) NOT NULL,
@@ -93,6 +98,7 @@ CREATE TABLE sections (
 );
 
 CREATE INDEX sections_document_id_idx ON sections USING btree (document_id); 
+CREATE INDEX sections_author_id_idx   ON sections USING btree (author_id); 
 
 
 
@@ -104,6 +110,7 @@ CREATE TABLE paragraphs (
 
   section_id   bigint NOT NULL references sections(id),
   author_id    bigint NOT NULL references user_identities(id),
+  author_addr  inet   NOT NULL DEFAULT '127.0.0.1',
   line_id      bigint NOT NULL references paragraphs(id),
   
   image        character varying(128),

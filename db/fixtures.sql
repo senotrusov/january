@@ -30,10 +30,11 @@ INSERT INTO user_identities(id, user_id, document_id, identity)
      VALUES (1, 1, 1, 1);
 
 
-INSERT INTO sections(id, document_id, title)
-     VALUES (1, 1, 'Comments');
+INSERT INTO sections(id, document_id, author_id, title)
+     VALUES (1, 1, 1, 'Comments');
 
 
 INSERT INTO paragraphs(id, section_id, author_id, line_id, message)
      VALUES (1, 1, 1, 1, 'Hello');
+
 
