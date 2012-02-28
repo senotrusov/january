@@ -1,0 +1,11 @@
+{
+  "name": "january",
+  "version": "0.0.1",
+  
+  "licenses": [{ "type": "Apache License 2.0", "url": "http://www.apache.org/licenses/LICENSE-2.0" }],
+
+  "dependencies": {
+    "pg": "0.6.x",
+    "coffee-script": "1.2.x"
+  }
+}
