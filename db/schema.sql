@@ -14,6 +14,8 @@
 --  limitations under the License.
 
 
+BEGIN;
+
 CREATE TABLE users (
   id                     bigserial PRIMARY KEY,
   created_at             timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -52,11 +54,12 @@ CREATE TABLE documents (
   created_at  timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at  timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   
-  board_id    bigint NOT NULL references boards(id),
-  author_id   bigint NOT NULL references users(id),
-  author_addr inet   NOT NULL DEFAULT '127.0.0.1',
+  board_id            bigint NOT NULL references boards(id),
+  author_id           bigint NOT NULL references users(id),
+  author_identity_id  bigint,
+  author_addr         inet   NOT NULL DEFAULT '127.0.0.1',
   
-  user_identity_counter integer NOT NULL default 0, -- gapless sequence: update w/lock set + 1 
+  author_identity_counter integer NOT NULL default 0, -- gapless sequence: update w/lock set + 1
 
   image        character varying(128),
   title        character varying(256),
@@ -64,20 +67,22 @@ CREATE TABLE documents (
   message      character varying(1024)
 );
 
-CREATE INDEX documents_board_id_idx  ON documents USING btree (board_id); 
-CREATE INDEX documents_author_id_idx ON documents USING btree (author_id); 
+CREATE INDEX documents_board_id_idx  ON documents USING btree (board_id);
+CREATE INDEX documents_author_id_idx ON documents USING btree (author_id);
 
 
 
-CREATE TABLE user_identities (
+CREATE TABLE author_identities (
   id           bigserial PRIMARY KEY,
   user_id      bigint  NOT NULL references users(id),
   document_id  bigint  NOT NULL references documents(id),
-  identity     integer NOT NULL 
+  identity     integer NOT NULL
 );
 
-CREATE INDEX user_identities_user_id_idx       ON user_identities USING btree (user_id);
-CREATE UNIQUE INDEX user_identities_unique_idx ON user_identities USING btree (document_id, identity);
+CREATE INDEX        author_identities_user_id_idx ON author_identities USING btree (user_id);
+CREATE UNIQUE INDEX author_identities_unique_idx  ON author_identities USING btree (document_id, identity);
+
+ALTER TABLE documents ADD CONSTRAINT documents_author_identity_id_fk FOREIGN KEY (author_identity_id) REFERENCES author_identities(id);
 
 
 
@@ -86,32 +91,58 @@ CREATE TABLE sections (
   created_at   timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at   timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-  document_id  bigint NOT NULL references documents(id),
-  author_id    bigint NOT NULL references users(id),
-  author_addr  inet   NOT NULL DEFAULT '127.0.0.1',
+  document_id         bigint NOT NULL references documents(id),
+  author_identity_id  bigint NOT NULL references author_identities(id),
+  author_addr         inet   NOT NULL DEFAULT '127.0.0.1',
   
   image        character varying(128),
   title        character varying(256) NOT NULL,
   
-  is_public                       boolean NOT NULL DEFAULT true,
-  is_writable_if_user_represented boolean NOT NULL DEFAULT false
+  is_public                         boolean NOT NULL DEFAULT true,
+  is_writable_if_author_represented boolean NOT NULL DEFAULT false,
+  is_versioned                      boolean NOT NULL DEFAULT false,
+  is_paragraphs_sortable            boolean NOT NULL DEFAULT false,
+  
+  paragraphs          bigint [],
+  section_version_id  bigint
 );
 
-CREATE INDEX sections_document_id_idx ON sections USING btree (document_id); 
-CREATE INDEX sections_author_id_idx   ON sections USING btree (author_id); 
+CREATE INDEX sections_document_id_idx ON sections USING btree (document_id);
 
 
 
+CREATE TABLE section_versions (
+  id           bigserial PRIMARY KEY,
+  created_at   timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at   timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  
+  section_id          bigint NOT NULL references sections(id),
+  author_identity_id  bigint NOT NULL references author_identities(id),
+  author_addr         inet   NOT NULL DEFAULT '127.0.0.1',
 
+  image        character varying(128),
+  title        character varying(256) NOT NULL,
+
+  paragraphs          bigint []
+);
+
+CREATE INDEX section_versions_section_id_idx ON section_versions USING btree (section_id);
+
+ALTER TABLE sections ADD CONSTRAINT sections_section_version_id_fk FOREIGN KEY (section_version_id) REFERENCES section_versions(id);
+
+
+-- That schema does not support paragraph prototypes - every instance is equal
+-- Permalink points to line_id.
+ 
 CREATE TABLE paragraphs (
   id           bigserial PRIMARY KEY,
   created_at   timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at   timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-  section_id   bigint NOT NULL references sections(id),
-  author_id    bigint NOT NULL references user_identities(id),
-  author_addr  inet   NOT NULL DEFAULT '127.0.0.1',
-  line_id      bigint NOT NULL references paragraphs(id),
+  section_id          bigint NOT NULL references sections(id),
+  author_identity_id  bigint NOT NULL references author_identities(id),
+  author_addr         inet   NOT NULL DEFAULT '127.0.0.1',
+  line_id             bigint NOT NULL references paragraphs(id),
   
   image        character varying(128),
   title        character varying(256),
@@ -119,7 +150,7 @@ CREATE TABLE paragraphs (
   message      character varying(1024)
 );
 
-CREATE INDEX paragraphs_section_id_idx ON paragraphs USING btree (section_id);
-CREATE INDEX paragraphs_author_id_idx  ON paragraphs USING btree (author_id);
-CREATE INDEX paragraphs_line_id_idx    ON paragraphs USING btree (line_id);
+CREATE INDEX paragraphs_section_id_idx          ON paragraphs USING btree (section_id);
+CREATE INDEX paragraphs_line_id_idx             ON paragraphs USING btree (line_id);
 
+COMMIT;

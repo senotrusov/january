@@ -18,7 +18,7 @@
 user=january
 dbname=january
 
-db="psql $dbname --username $user --single-transaction --echo-all --set ON_ERROR_STOP=on"
+db="psql $dbname --username $user --echo-all --set ON_ERROR_STOP=on"
 postgres="psql postgres --username postgres --set ON_ERROR_STOP=on"
 
 

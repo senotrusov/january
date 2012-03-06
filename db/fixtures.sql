@@ -13,6 +13,7 @@
 --  See the License for the specific language governing permissions and
 --  limitations under the License.
 
+BEGIN;
 
 INSERT INTO users(id)
      VALUES (1);
@@ -22,19 +23,21 @@ INSERT INTO boards(id, slug)
      VALUES (1, 'n');
 
 
-INSERT INTO documents(id, board_id, author_id, user_identity_counter)
+INSERT INTO documents(id, board_id, author_id)
+     VALUES (1, 1, 1);
+
+
+INSERT INTO author_identities(id, user_id, document_id, identity)
      VALUES (1, 1, 1, 1);
+     
+UPDATE documents SET author_identity_counter = 1, author_identity_id = 1 WHERE id = 1;
 
 
-INSERT INTO user_identities(id, user_id, document_id, identity)
-     VALUES (1, 1, 1, 1);
-
-
-INSERT INTO sections(id, document_id, author_id, title)
+INSERT INTO sections(id, document_id, author_identity_id, title)
      VALUES (1, 1, 1, 'Comments');
 
 
-INSERT INTO paragraphs(id, section_id, author_id, line_id, message)
+INSERT INTO paragraphs(id, section_id, author_identity_id, line_id, message)
      VALUES (1, 1, 1, 1, 'Hello');
 
-
+COMMIT;
