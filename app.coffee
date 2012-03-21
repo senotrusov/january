@@ -28,7 +28,7 @@ pg.connect conString, (err, client) ->
   client.query "SELECT * FROM paragraphs ORDER BY id LIMIT 1;", (err, result) ->
     if err
       console.log err
-      process.exit 1 # pg pool prevents process from exit
+      process.exit 1 # TODO: pg pool prevents process from exit
     else
       console.log result.rows[0].created_at
       console.log result.rows[0].message
@@ -46,7 +46,7 @@ app = connect()
 if env != 'production'
   app.use connect.favicon()
   app.use connect.logger 'dev'
-  app.use connect.static 'public' 
+  app.use connect.static 'public'
 
 app.use connect.cookieParser cookieKey
 app.use connect.cookieSession cookie: maxAge: 1000 * 60 * 60 * 24 * 365 # time in milliseconds, 1 year

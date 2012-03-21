@@ -56,7 +56,7 @@ CREATE TABLE documents (
   
   board_id            bigint NOT NULL references boards(id),
   author_id           bigint NOT NULL references users(id),
-  author_identity_id  bigint,
+  author_identity_id  bigint, -- references author_identities(id)
   author_addr         inet   NOT NULL DEFAULT '127.0.0.1',
   
   author_identity_counter integer NOT NULL default 0, -- gapless sequence: update w/lock set + 1
@@ -104,7 +104,7 @@ CREATE TABLE sections (
   is_paragraphs_sortable            boolean NOT NULL DEFAULT false,
   
   paragraphs          bigint [],
-  section_version_id  bigint
+  section_version_id  bigint -- references section_versions(id)
 );
 
 CREATE INDEX sections_document_id_idx ON sections USING btree (document_id);
