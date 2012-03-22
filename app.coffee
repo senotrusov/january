@@ -20,20 +20,6 @@ pg = require('pg').native
 conString = 'tcp://january@localhost/january' # password is stored in ~/.pgpass
 pg.defaults.poolSize = 30
 
-
-# Sample code to check database connection
-pg.connect conString, (err, client) ->
-  console.log err if err
-    
-  client.query "SELECT * FROM paragraphs ORDER BY id LIMIT 1;", (err, result) ->
-    if err
-      console.log err
-      process.exit 1 # TODO: pg pool prevents process from exit
-    else
-      console.log result.rows[0].created_at
-      console.log result.rows[0].message
-
-
 connect = require 'connect' # https://github.com/senchalabs/connect
 http    = require 'http'
 
@@ -54,14 +40,20 @@ app.use connect.bodyParser()
 app.use connect.csrf()
 
 app.use (req, res) ->
-  req.session.count ?= 0
-  req.session.count += 1
-    
-  res.end "Hello #{ req.session.count }\n"
-      
-if env != 'production'
-  app.use connect.errorHandler()
+  pg.connect conString, (err, client) ->
+    if err
+      console.log err
+      process.exit 1
+    else
+      client.query "SELECT * FROM paragraphs WHERE id = 1", (err, result) ->
+        if err
+          console.log err
+          process.exit 1 # TODO: pg pool prevents process from exit
+        else
+          req.session.count ?= 0
+          req.session.count += 1
 
-
+          res.end "#{result.rows[0].message} #{req.session.count}\n"
+              
 http.createServer(app).listen 3000
 
