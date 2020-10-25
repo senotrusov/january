@@ -7,6 +7,6 @@
   "dependencies": {
     "pg": "0.6.x",
     "coffee-script": "1.2.x",
-    "connect": "2.0.x"
+    "connect": "3.7.x"
   }
 }
